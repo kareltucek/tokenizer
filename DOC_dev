@@ -1,0 +1,162 @@
+This document explains the inner implementation of this library. 
+
+Contents 
+========
+1. High level introduction to structures and algorithms used.
+2. Detailed description of algorithms introduced in chapter 1. (orginized acording to *) references given in chapter 1.. References in the form (*) were later determined to be so clear that they did not need any comments.
+
+1. files/classes
+================
+
+tokenizer.h
+{
+  class Tokenizer
+  {
+    This class serves as a user front end. It contains following structures/objects/features:
+
+    1) An automaton construction algorithm which takes a regular expression and converts it to non-deterministic automaton.
+    private struct token
+    {
+      This is an auxiliary structure used for construction of a regular expression. It contains information about a type of a token (e.g. beginning of a parenthesis or a partially created automaton). 
+    }
+    token ReadToken(basic_string<type>);
+    bool is_operator();
+
+    2) Tokenizer composition algorithm - it's task is to process tokens provided by Tokenizer::AddToken call and to join them *efficiently*
+    FA engine;
+    vector<FA> FAstack;
+
+    (3) user-end api
+    bool Match(basic_string<type> string, basic_string<type> pattern); 
+    void AddToken(basic_string<type> token_rgx, int id);
+    void AddTokensSubmit();
+    template<class iterator_type> bool NextToken(iterator_type& itr, const iterator_type& itrend, int& token_id);
+    void Clear();
+  }
+}
+
+automaton.h
+{
+  class FA 
+  {
+    This class represents both deterministic and non-deterministic automaton. In memory FA acts as a stack allocated wrapper of a heap allocated graph of States. The actual State representation of an automaton is created and destructed manually and practically is moved between multiple FA instances as these are operated on.
+
+    4) Transformation of nondeterministic automaton to deterministic
+
+    5) Reduction algorithm.
+
+    (6) Algebraic operators for regex handling. These allow easy Thompson's construction.
+
+    7) Graph crawler.
+
+    (8) Range constructors.
+  }
+}
+
+datastructs.h
+{
+  struct Range
+  {
+    Represents a character range such as [a-z] or a single character. It is represented as a pair of shorts with comparison operators.
+  }
+
+  struct Transition : public Range
+  {
+    Transition represents a directed edge between two automaton states. It is a character range which contains a binary tree of target states (in deterministic automaton it is always one state). 
+    0 represents a lambda transition.
+  }
+
+  class State
+  {
+    State represents a state of an automaton. It consists of a binary tree of transition intervals, an accepting token id and a flag register. It provides a state search method (for crawling) and an AddTransition method.
+
+    (9) Character ranges are handled as single elements, which saves a lot of time and space, but causes many problems. E.g. the AddTransition method has to take care (recursively) of all overlapping scenarios. As this problem is quite straightforward (although not trivial), it won't be discussed any further.
+
+    the flag register values
+      ttbegin, ttend, ttseparator - These flags indicate which properties are to be taken in consideration in a ttlambda state.
+      ttlamba - indicates that this is a special lambda transition state, which basically means that the next transition is to be picked according to an additional context (whether the crawler is at the beginning of the string, the end of string or at a word separator). Crawler does not consume any input in this state.
+      ttaccepting - indicates that this state is accepting
+  }
+}
+
+2. algorithms
+=============
+
+1) An automaton construction algorithm.
+
+related methods:
+    FA Tokenizer::ConstructNFA(basic_string<type> regex, int token_id);
+    token Tokenizer::ReadToken(basic_string<type>);
+    is_operator(wchar_t);
+
+This algorithm lives in Tokenizer::ConstructNFA(basic_string<type> regex, tokenid) method. It works in two passes:
+
+- First pass converts the input regular expression into a queue of tokens (character ranges and trivial substrings are converted directly into an automaton while other meta characters are converted into tokens of corresponding types). That is done by calling the ReadToken function, which works as a lexical analyzer. 
+
+- Second pass works as a push-down automaton. It retrieves tokens from the queue and either pushes them on a local stack or reduces the stack (performing Thompson's construction). Operators are implemented as a part of the automaton class, which makes the code simpler.
+
+"(" or <FA> on input will be pushed onto stack
+"*", "?" Or "+" results in retrieving the top token from the stack, applying the operation and pushing the automaton back as a token of type "automaton"
+"|" results in concatenation of all <FA>s on top of stack. Then it is pushed onto the stack.
+")" will concatenate all <FA>s on top of stack and then apply "choice" until "(" is found on top of the stack
+"[]" and . constructs are solved during the lexical analysis
+"$", "^" Or "\\b" will construct a corresponding lambda transition automaton and push it onto the stack
+
+2) Tokenizer composition algorithm.
+
+    FA engine;
+    vector<FA> FAstack;
+
+The task of this algorithm is to process the "Added" regexes as efficiently as possible. The result of this algorithm is a deterministic automaton being assigned into the Tokenizer::engine (which is later used for actual tokenization process).  The problem is that constructing entire NFA before transformation results in a very costly transformation since many lambda transitions have to be crawled during every step of the transformation (time measured on a trivial tree with trivial or linear composition is roughly n^2). This algorithm lives in the pair of functions AddToken and AddTokensSubmit.
+
+A solution is to join smaller automatons into bigger ones in smaller steps. The diagram of what happens can be imagined as an n-ary tree for some n in which leaves are obtained directly from regexes. This is done by converting every regex obtained directly to a DFA from the constructed NFA and pushing it onto the FAstack. Whenever the size of the nth automaton of the stack is less or equal to the size of the pushed automaton, the last n automatons are taken, joined into a new NFA using the choice operator and transformed to a new DFA which is then pushed back onto the stack.
+
+4) Transformation of NFA into DFA
+related methods/structures:
+
+      std::map<State*, States*> convGetTable;
+      std::map<States*, State*, state_set_comparer> convGetState;
+
+      bool GetRangeBounds(State* state, int base, int& lower, int& upper);
+      void Move(State* state, Range move, States& acumulator);
+      States* LambdaClosure(const States& states, bool& accepting, int& acceptingid);
+      State * CreateNewState(States * states, bool accepting, bool& newstate, int tokenid);
+      void FreeConvertTables();
+
+This transformation is performed by a Breadth First Search in the input NFA. Two auxiliary tables are constructed to provide a bidirectional mapping between sets of the nondeterministic states and the states of the produced deterministic automaton = convGetTable and convGetState. These are freed after the transformation is finished.
+
+Transformation is initiated by constructing a lambda closure of the entering state, constructing a corresponding entering state of the DFA and pushing it into a queue. 
+
+In each step an unprocessed state is retrieved from the queue. The GetRangeBounds method is repeatedly used to determine the next longest possible character range with transitions consistent over the entire set. Then a "Move" is performed on the state's nondeterministic state set and its lambda closure is passed to the CreateNewState function, which either returns a state which already exists or creates a new state in the resulting automaton. Also a new transition is inserted and the new state is enqueued (unless it already existed).
+
+The ^,$ and \b are handled using special types of deterministic lambda transitions in the deterministic automaton. In the nondeterministic automaton, these "characters" are represented just by a lambda transition with corresponding flag. For Transformation from NFA into DFA it means that multiple types of lambda closures have to be constructed (for each subset of properties that have to be handled). If any of these additional properties are encountered during the first lambda closure construction, then a new lambda state is added into the DFA altogether with lambda transitions (for lambda closures restricted to the flags allowed) for every type of lambda closure which is to be considered (that is for each subset of the set of options encountered during the first (unrestricted) pass).  This was packed into the SolveClosure method.
+
+5) Reduction algorithm
+
+related methods/structures:
+      int classid;
+      struct StateClass
+      {
+        StateClass();
+        StateClass(int tokenid, State * representant);
+        State * representant;
+        int id; //starts as tokenid; later may become whatever
+        bool operator<(const StateClass&) const;
+      };
+      std::map<State*, StateClass> classMap; //maps states to their classes for reduction
+      std::set<StateClass> classNew; //tmp storage for new states during step of reduction algorithm
+      States tempStates; //full list of states; serves for reduction; currently filled during NFA->DFA conversion
+
+      void JoinRanges();
+      void ReduceInit();
+      bool ReduceStep();
+      void ReduceFinish();
+      void ReduceInsertNew(State * state); //new equivalence class
+      bool Correspond(State * a, State * b);
+
+The point of this algorithm is to determine equivalence classes over the set of all states and reduce entire automaton to automaton which consists only of the representatives of all equivalence classes. This works by creating two equivalence classes (for accepting/nonaccepting states) and then iterating ReductionStep which just goes through all states and determines if this state's transitions are equivalent (in respect to the equivalence classes) to the transitions of the representatives of its class. Whenever they don't "correspond", the set of newly created states is searched for correspondence. If the search is not successful a new equivalence class is created (for the state). When the pass is finished the "newly created" classes are added to the rest of the classes and the ReductionStep is repeated until all classes become stable.
+
+7) The crawling algorithm
+This is a straightforward procedure. Crawler just supplies characters from string to the automatons GetNext (state) method and checks for accepting states. The only thing to note is that there are actually two types of states - regular states, and deterministic lambda transition states. If regular state is encountered, then we supply current character to the state's GetNext method and move by one character.  If lambda state is encountered, then a "context mask" is constructed, "and"ed with the transition type mask obtained from the state and passed into the GetSpec method of the state. This mechanism allows the automaton to request additional context information.
+
+

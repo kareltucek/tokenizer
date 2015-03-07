@@ -1,0 +1,14 @@
+o main.cpp
+vsplit Makefile
+split vimproj
+
+tabfind automaton.h
+vsplit automaton.cpp
+
+tabfind datastructs.h
+vsplit datastructs.cpp
+
+tabfind tokenizer.h
+vsplit tokenizer.cpp
+
+tabfind tokenizer_lib.cpp

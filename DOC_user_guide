@@ -1,0 +1,94 @@
+Contents:
+========
+1 installation & compilation
+2 uninstallation
+3 usage/api description
+4 regex notation
+5 testing functionality / example
+6 TODO
+
+1. Installation
+===============
+
+This project may be either installed into standard system paths or copied directly into the target project.
+
+1) Installation into system as a static library:
+  
+  The following command will install all necessary files into /usr/local:
+
+  make install
+
+  Using library in a project is then as simple as adding '#include <drgxtokenizer/tokenizer.h>' into your source file and adding '-ldrgxtokenizer' into the final g++ call.
+
+  Note that entire project is enclosed in namespace "drgxtokenizer" in order to avoid clashes with other libraries.
+
+2) using arbitrary templates
+  If you want to use other types than char and wchar_t, then you will have to use the full template. This can be done by adding '#define DRGXTOKENIZER_TEMPLATED' define *before* the <drgxtokenizer/tokenizer.h> inclusion. In that case you don't need to compile using '-ldrgxtokenizer' (because in that case all library codes are included directly into your code). 
+
+3) Using this library without installation
+  This can be done by copying its code to your project and either defining the  '#define DRGXTOKENIZER_TEMPLATED'  before "tokenizer.h" inclusion (note that in this case you need to include  the relative path to where you placed the tokenizer.h header, not <drgxtokenizer/tokenizer.h>) or by adding tokenizer_lib.cpp into your compile machinery.
+
+
+2. Uninstallation
+=================
+  
+  make uninstall
+
+3. Usage/Api description
+========================
+- Header to be included in your project's files is <drgxtokenizer/tokenizer. h>.
+- All library objects are enclosed in namespace 'drgxtokenizer'.
+- The only class meant for user interaction is drgxtokenizer::Tokenizer.
+- Examples can be found in 'main.cpp'. This file is compiled as part of main compilation. It can be compiled explicitly by 'g++ main.cpp -ldrgxtokenizer' (if the lib is installed in your system's paths).
+- Any type can be used as a template argument as long as it has defined arithmetic operations and std::numeric_limits<type>::max().
+
+Api
+---
+Tokenizer(const std::locale& loc = std::locale());
+  This is a constructor of the tokenizer. It takes a locale as an optional argument (the locale is used just for interpretation of the "\b" operator)
+
+static bool Tokenizer::Match(basic_string<type> string, basic_string<type> pattern);
+  This method allows static test of a string against a regex pattern.
+  
+void Tokenizer::AddToken(basic_string<type> token_rgx, int id);
+  This method adds a new token specification with its desired id. Note that before actually using the tokenizer, you have to call AddTokensSubmit() call. Tokenizer is always greedy (prefers longest match) and returns always the highest id on ambiguous match. Ids should start at 1 (0/-1 is implicit value). 
+
+void Tokenizer::AddTokensSubmit();
+  This function has to be called after all tokens have been added using the AddToken call.
+
+template<class iterator_type>  bool Tokenizer::NextToken(iterator_type& itr, const iterator_type& itrend, int& token_id);
+  This function returns after matching single (longest) pattern beginning at "itr" and ending before "itrend". "itr" is moved to the beginning of the next word. Return value determines whether the search was successful - note that it is YOUR duty to create token definitions so that they ALWAYS consume at least one character (e.g. by adding AddToken(L".", 0) ). The id of the matched token is returned into the token_id variable (it is always the higher of two ids in case of ambiguity). The iterator type has to have implemented the standard operators -- ++ and *. Furthermore, it has to dereference to a reference to a type which can be casted to the template argument of tokenizer (e.g. char or wchar_t).
+
+4 regex notation
+================
+This project uses Unix-like regex notation. Only basic ("algebraic") regex operations are supported, but the notation resembles extended regex (no slashes for meta meaning!):
+.    any character
+*    iteration - matches any number of occurrences
++    iteration - matches 1 and more occurrences
+?    iteration - matches 0 or 1 occurrences
+()   grouping of characters (for precedence reasons)
+(|)  the choice operator e.g. (dog|cat|elephant)
+[] or [^]  character group (or inverse group) e.g. "[a-zA-Z0-9_]" "[^1246k-p]" "[-abcd]" "[]]"
+\    escape mark - interprets the following character as a literal character (no matter whether it has a meta meaning or not)
+^    begin of a string
+$    end of a string
+\b   begin or end of a word - evaluated by the std::isalnum<type> function.
+
+not yet implemented:
+{a,b}  or {a,} iteration - a to b number of occurences
+evaluation of matching groups ('"(abc)def" -> $1 = "abc"')
+
+5 example & functionality test
+==============================
+For this purpose, the main.cpp was written. The executable is produced as part of the make procedure into the project's root under the name 'tokenizer'. 
+
+6 TODO
+======
+- add a few more operators
+- generalize the template so that it does not have to use the std::limits
+- mark support for matching group evaluation (based on a bidirectional pass emitting all possible positions of marks in both directions and analysis of the graph created by intersecting the lists produced by both forward and backward pass of an automaton - should run in something like log(d)*c^2*n where c is the number of marks and d the size of the alphabet)
+- nongreedy iterations based on the mark support.
+- efficient (linear) regex search functionality (based on a forward nongreedy pass and a backward greedy pass).
+
+
+

@@ -1,0 +1,30 @@
+Regex tokenizer - semestral project c++ specification - Karel Tucek
+
+main idea: I would like to implement a regular expression evaluator with support for tokenization. The implementation should be based on the automata theory. The tokenizer will work dynamically == it will be constructed at runtime.
+
+Platform: This "library" will be written under Linux (== g++ + Makefile will be provided). Of course it should be platform independent, but msvc(/other) project files won't be included.
+
+Notation recognized: The library will accept the basic regular expressions in almost standard Unix notation with a few additional trivially implementable operators. That means the basic operators of algebraic regular expression given in unix notations: *'.'[] - ^ (|) enriched by + and ? operators. These restrictions will allow a parse time o(n*log(c)) where c is the maximal number of distinct transitions on a state since generating static transition tables does not seem to be acceptable due to a limited memory. Of course, given an alphabet of a static length the "log (c)" is just a small constant.
+
+Encodings: 
+Tokenizer will work with 16 bit integers. Patterns will be required in std::wstring format, but won't be restricted to a single encoding => Anything will work as long as it is castable into 16 bit format (32 bit unicode support is not intended).
+
+features of the front end api (of an instantiated object):
+- test a string against a regex (available also statically)
+- add new token
+- finilize construction 
+- tokenize - a templated function taking references to a (templated) buffer iterators which returns a token id and moves the <begin iterator> to a new position. Iterators are required to have the standard * and prefix ++ operators implemented and to dereference to a uin16 castable type.
+
+object design/implementation:
+The project should consist of two main classes - Automaton and Tokenizer - and a few additional auxiliary structures which will represent the inner structure of the two main classes (such as states, transitions, character ranges). 
+- Tokenizer 
+  This class will act as a user front end. It will contain an instance of an Automaton which will work as the tokenizer. Its purpose will be mainly translation of user requests into corresponding actions on an automaton - that is construction of an automaton from expressions and some crawling algorithm. Construction of an automaton will resemble the "shunting yard" algorithm (a push-down automaton like algorithm for math expression processing).
+- Automaton
+This class represents both deterministic and nondeterministic automatons. It is basically a wrapper of a directed graph which consists of states and their transitions. It will provide regex operators as a means of joining smaller automatons into bigger ones (the actual graph structure is persistend during these since there is no need to duplicate the actual representations during any operations). It will also provide the nondeterministic to deterministic transformation and a reduction algorithm. 
+- State 
+This class will contain all necessary information about a state of automaton (accepting flags/ids and transitions). Transitions will be handled using binary trees containing intervals (character ranges as [a-z]) - to keep the memory footprint as low as possible.
+- other auxiliary classes 
+
+
+
+
