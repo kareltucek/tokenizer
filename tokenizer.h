@@ -28,7 +28,7 @@ namespace drgxtokenizer
         int tokenCount;
         drgxtokenizer::FA<T_data> engine;
         std::vector<drgxtokenizer::FA<T_data> > FAstack;
-        static drgxtokenizer::FA<T_data> ConstructNFA(std::basic_string<T_data> regex, int token_id = -1);
+        static drgxtokenizer::FA<T_data> ConstructNFA(std::basic_string<T_data> regex, int token_id = -1, bool caseSens);
 
         std::locale loc;
 
@@ -50,7 +50,7 @@ namespace drgxtokenizer
 
 
         static bool Match(std::basic_string<T_data> string, std::basic_string<T_data> pattern);
-        void AddToken(std::basic_string<T_data> token_rgx, int id, int base = DEFAULT_BASE);
+        void AddToken(std::basic_string<T_data> token_rgx, int id, bool case_sens = true, int base = DEFAULT_BASE);
         void AddTokensSubmit();
         template<class iterator_type>
           bool NextToken(iterator_type& itr, const iterator_type& itrend, int& token_id);

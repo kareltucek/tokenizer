@@ -37,7 +37,7 @@ namespace drgxtokenizer
     }
 
   template<class T_data>
-    FA<T_data> Tokenizer<T_data> ::ConstructNFA(std::basic_string<T_data> regex, int token_id)
+    FA<T_data> Tokenizer<T_data> ::ConstructNFA(std::basic_string<T_data> regex, int token_id, bool caseSens)
     {
       std::queue<token> tokens;
       std::deque<token> st;
@@ -56,13 +56,13 @@ namespace drgxtokenizer
           std::basic_string<T_data> s = t.s;
           if(s.length() > 1)
           {
-            tokens.push(token(FA<T_data>(s.substr(0, s.length()-1), false)));
+            tokens.push(token(FA<T_data>(s.substr(0, s.length()-1), false, caseSens)));
             //     tokens.push(token(toktype_concat, ""));
           }
-          tokens.push(token(FA<T_data>( s.substr(s.length()-1), false))); // abcd* != (abcd)*
+          tokens.push(token(FA<T_data>( s.substr(s.length()-1), false, caseSens))); // abcd* != (abcd)*
         }
         else if(t.t==toktype_range)
-          tokens.push(token(FA<T_data>(t.s,true)));
+          tokens.push(token(FA<T_data>(t.s,true, caseSens)));
         else if(t.t==toktype_any)
           tokens.push(token(FA<T_data>(Range<T_data>(1,std::numeric_limits<T_data>::max()))));
         else
@@ -285,7 +285,7 @@ namespace drgxtokenizer
     }
 
   template<class T_data>
-    void Tokenizer<T_data> ::AddToken(std::basic_string<T_data> token_rgx, int id, int base)
+    void Tokenizer<T_data> ::AddToken(std::basic_string<T_data> token_rgx, int id, bool caseSens, int base)
     {
 #if defined(LINEAR_COMPOSITION)
       engine = engine | ConstructNFA(token_rgx, id);
@@ -293,7 +293,7 @@ namespace drgxtokenizer
       if((tokenCount & 511) == 511)
         AddTokensSubmit();
 #elif defined(BINARY_COMPOSITION)
-      FA<T_data> newtok = ConstructNFA(token_rgx, id); 
+      FA<T_data> newtok = ConstructNFA(token_rgx, id, caseSens); 
       FA<T_data> newtokD = newtok.ConvertToDFA();
       newtok.Free();
       FAstack.push_back(newtokD);

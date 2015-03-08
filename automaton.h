@@ -116,7 +116,7 @@ namespace drgxtokenizer
         FA(bool empty);
         FA(const FA&);
         FA(Range<T_data> );
-        FA(std::basic_string<T_data>, bool); //either a trivial string or content of a range
+        FA(std::basic_string<T_data>, bool range, bool case); //either a trivial string or content of a range
 
         const FA plus();
         const FA star();

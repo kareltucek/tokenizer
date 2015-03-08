@@ -58,7 +58,7 @@ namespace drgxtokenizer
     }
 
   template<class T_data>
-    FA<T_data>::FA(std::basic_string<T_data> string, bool range)
+    FA<T_data>::FA(std::basic_string<T_data> string, bool range, bool case_sens)
     : convGetTable(),convGetState(), size(1)
     {
       if(range)
@@ -88,12 +88,28 @@ namespace drgxtokenizer
         {
           if(str.length() > 2 && str[1] == '-')
           {
-            l.push_back(Range<T_data> ((T_data)str[0], (T_data)str[2]));
+            if(case_sens)
+            {
+              l.push_back(Range<T_data> ((T_data)str[0], (T_data)str[2]));
+            }
+            else
+            {
+              l.push_back(Range<T_data> (towlower((T_data)str[0]), towlower((T_data)str[2])));
+              l.push_back(Range<T_data> (towupper((T_data)str[0]), towupper((T_data)str[2])));
+            }
             str = str.substr(3);
           }
           else
           {
-            l.push_back(Range<T_data> ((T_data)str[0], (T_data)str[0]));
+            if(case_sens)
+            {
+              l.push_back(Range<T_data> ((T_data)str[0], (T_data)str[0]));
+            }
+            else
+            {
+              l.push_back(Range<T_data> (towlower((T_data)str[0]), towlower((T_data)str[0])));
+              l.push_back(Range<T_data> (towupper((T_data)str[0]), towupper((T_data)str[0])));
+            }
             str = str.substr(1);
           }
         }
@@ -123,7 +139,15 @@ namespace drgxtokenizer
         while(!string.empty())
         {
           State<T_data>  * st = new State<T_data> ();
-          accepting->AddTransition(Range<T_data> ((T_data)string[0],(T_data)string[0]), st);
+          if(case_sens)
+          {
+            accepting->AddTransition(Range<T_data> ((T_data)string[0],(T_data)string[0]), st);
+          }
+          else
+          {
+            accepting->AddTransition(Range<T_data> (towlower((T_data)string[0]),towlower((T_data)string[0])), st);
+            accepting->AddTransition(Range<T_data> (towupper((T_data)string[0]),towupper((T_data)string[0])), st);
+          }
           accepting = st;
           string = string.substr(1);
         }
@@ -489,42 +513,42 @@ namespace drgxtokenizer
     }
 
 
-      /*
-  template<class T_data>
-    bool FA<T_data>::Match(std::basic_string<T_data> string)
-    {
-      typename std::basic_string<T_data>::iterator itr = string.begin();
-      State<T_data>  * state = entering;
-      State<T_data>  * accept = NULL;
-      if(entering->Accepting())
-        accept = entering;
+  /*
+     template<class T_data>
+     bool FA<T_data>::Match(std::basic_string<T_data> string)
+     {
+     typename std::basic_string<T_data>::iterator itr = string.begin();
+     State<T_data>  * state = entering;
+     State<T_data>  * accept = NULL;
+     if(entering->Accepting())
+     accept = entering;
 
-      bool first = true;
-      while(state != NULL && (itr != string.end() || state->Lambda()))
-      {
-        if(state->Lambda())
-        {
-          short flags = (first ? ttBegin : 0) | ( itr == string.end() ? ttEnd : 0) | ( false ? ttSep : 0);
-          state = state->GetSpec(state->TType() & flags);
-        }
-        else
-        {
-          state = state->GetNext(*itr);
-          ++itr;
-          first = false;
-        }
+     bool first = true;
+     while(state != NULL && (itr != string.end() || state->Lambda()))
+     {
+     if(state->Lambda())
+     {
+     short flags = (first ? ttBegin : 0) | ( itr == string.end() ? ttEnd : 0) | ( false ? ttSep : 0);
+     state = state->GetSpec(state->TType() & flags);
+     }
+     else
+     {
+     state = state->GetNext(*itr);
+     ++itr;
+     first = false;
+     }
 
-        if(state != NULL && state->Accepting())
-        {
-          accept = state;
-          return true; // if we dont care about the rest of string
-        }
-      }
+     if(state != NULL && state->Accepting())
+     {
+     accept = state;
+     return true; // if we dont care about the rest of string
+     }
+     }
 
-      return accept != NULL;
-      //moved to the templated function...
-    }
-      */
+     return accept != NULL;
+  //moved to the templated function...
+  }
+  */
 
 
   template<class T_data>
