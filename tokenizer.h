@@ -28,7 +28,7 @@ namespace drgxtokenizer
         int tokenCount;
         drgxtokenizer::FA<T_data> engine;
         std::vector<drgxtokenizer::FA<T_data> > FAstack;
-        static drgxtokenizer::FA<T_data> ConstructNFA(std::basic_string<T_data> regex, int token_id = -1, bool caseSens);
+        static drgxtokenizer::FA<T_data> ConstructNFA(std::basic_string<T_data> regex, int token_id = -1, bool caseSens = true);
 
         std::locale loc;
 
