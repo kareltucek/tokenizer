@@ -1,0 +1,50 @@
+<<<<<<< HEAD
+.fuse*
+*~
+*.swp
+*.obj
+*.o
+dwb/default/history
+dwb/default/navigate.history
+dwb/default/search.history
+dwb/default/commands.history
+dwb/default/cookies.allow
+dwb/default/cookies_session.allow
+dwb/default/hsts
+dwb/default/plugindb
+dwb/default/plugins.allow
+dwb/default/session
+vgcore*
+
+
+
+=======
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+>>>>>>> df5ae1b71ec985696007ae52b3d31db0bb37d25d
