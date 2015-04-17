@@ -15,7 +15,6 @@ dwb/default/plugins.allow
 dwb/default/session
 vgcore*
 
-
 # Fortran module files
 *.mod
 
