@@ -5,6 +5,8 @@
 #include <iostream>
 #include <assert.h>
 #include <limits>
+#include <wchar.h>
+#include <ctype.h>
 
 namespace drgxtokenizer
 {
@@ -244,7 +246,9 @@ namespace drgxtokenizer
     {
       if(entering == NULL)
         return;
-      std::set<State<T_data> *> s = std::set<State<T_data> *>();
+      //typedef std::set<State<T_data> *, lessop<State<T_data> > > s_type;
+      typedef std::set<State<T_data> *> s_type;
+      s_type s;
       std::queue<State<T_data> *> q = std::queue<State<T_data> *>();
       q.push(entering);
       s.insert(entering);
@@ -254,7 +258,7 @@ namespace drgxtokenizer
         q.pop();
         for(typename std::set<Transition<T_data> >::iterator itr = c->transitions.begin(); itr != c->transitions.end(); ++itr)
         {
-          for(typename std::set<State<T_data>*>::iterator it = (*itr).states.begin(); it != (*itr).states.end(); ++it)
+          for(typename s_type::const_iterator it = (*itr).states.begin(); it != (*itr).states.end(); ++it)
           {
             std::pair<typename std::set<State<T_data>*>::iterator,bool> result = s.insert(*it);
             if(result.second)
@@ -321,7 +325,7 @@ namespace drgxtokenizer
         if(tit == (*sit)->transitions.end())
           continue;
         const Transition<T_data>& t = *tit;
-        for(typename std::set<State<T_data>*>::iterator it = t.states.begin(); it != t.states.end(); ++it)
+        for(typename std::set<State<T_data>*>::const_iterator it = t.states.begin(); it != t.states.end(); ++it)
         {
           acumulator.insert(*it);
         }
@@ -333,7 +337,7 @@ namespace drgxtokenizer
     {
       std::set<State<T_data>*>* newStates = new std::set<State<T_data>*>();
       std::queue<State<T_data> *> q = std::queue<State<T_data> *>();
-      for(typename std::set<State<T_data>*>::iterator itr = states.begin(); itr != states.end(); itr++)
+      for(typename std::set<State<T_data>*>::const_iterator itr = states.begin(); itr != states.end(); itr++)
         q.push(*itr);
 
 #ifdef ANALYSIS
@@ -357,7 +361,7 @@ namespace drgxtokenizer
             if(transition != s->transitions.end())
             {
               transitionTypesFound |= f;
-              for(typename std::set<State<T_data>*>::iterator itr = (*transition).states.begin(); itr != (*transition).states.end(); ++itr)
+              for(typename std::set<State<T_data>*>::const_iterator itr = (*transition).states.begin(); itr != (*transition).states.end(); ++itr)
                 q.push(*itr);
             }
           }
@@ -369,7 +373,7 @@ namespace drgxtokenizer
   template<class T_data>
     State<T_data>  * FA<T_data>::CreateNewState(std::set<State<T_data>*> * states, bool accepting, bool& newstate, int acceptingid) // O(log(#states))
     {
-      typename std::map<std::set<State<T_data>*>*, State<T_data> *>::iterator st = convGetState.find(states);
+      typename map_tab_to_st_t::const_iterator st = convGetState.find(states);
       newstate = false;
       if(st == convGetState.end())
       {
@@ -555,8 +559,8 @@ namespace drgxtokenizer
     bool FA<T_data>::state_set_comparer::operator ()(const std::set<State<T_data>*> * lhs, const std::set<State<T_data>*> * rhs) const
     {
       //just compare the to set of states as if they were references; (otherwise would be compared by the value of pointer; But we want to search for corresponding set)
-      typename std::set<State<T_data>*>::iterator l = lhs->begin();
-      typename std::set<State<T_data>*>::iterator r = rhs->begin();
+      typename std::set<State<T_data>*>::const_iterator l = lhs->begin();
+      typename std::set<State<T_data>*>::const_iterator r = rhs->begin();
       while(l != lhs->end() || r != rhs->end())
       {
         if(l == lhs->end() || *l < *r)
@@ -706,8 +710,9 @@ namespace drgxtokenizer
           State<T_data>  * rep = classMap[*(*tit).states.begin()].representant;
           if( *(*tit).states.begin() != rep)
           {
-            ((std::set<State<T_data>*>)((*tit).states)).erase((*tit).states.begin());
-            ((std::set<State<T_data>*>)((*tit).states)).insert(rep);
+            std::set<State<T_data>*>& ref = ((Transition<T_data>*)&(*tit))->states;
+            ref.erase(ref.begin());
+            ref.insert(rep);
           }
         }
       }

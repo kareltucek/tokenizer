@@ -78,8 +78,10 @@ namespace drgxtokenizer
         bool Correspond(State<T_data>  * a, State<T_data>  * b);
 
         //NFA->DFA conversion related stuff
-        std::map<State<T_data> *, std::set<State<T_data>*>*> convGetTable;
-        std::map<std::set<State<T_data>*>*, State<T_data> *, state_set_comparer> convGetState;
+        typedef std::map<State<T_data> *, std::set<State<T_data>*>*> map_st_to_tab_t;
+        typedef std::map<std::set<State<T_data>*>*, State<T_data> *, state_set_comparer> map_tab_to_st_t;
+        map_st_to_tab_t convGetTable;
+        map_tab_to_st_t convGetState;
 
         State<T_data>* SolveClosure(std::set<State<T_data>*>& s, std::queue<State<T_data>*>& q, const Range<T_data>& r, State<T_data> * state);
         State<T_data>* SetupNewState(std::set<State<T_data>*> * closure, bool accepting, int acceptingid, const Range<T_data>& r, State<T_data>* state,  std::queue<State<T_data> *>& queue) ;
