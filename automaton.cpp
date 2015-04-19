@@ -241,12 +241,20 @@ namespace drgxtokenizer
       accepting->tokenid = id;
     }
 
+    template<class P>
+    struct lessop
+    {
+       bool operator()(const *& k1, const P*& k2) const
+       {
+        return ((int)k1) < ((int)k2);
+       }
+    };
+
   template<class T_data>
     void FA<T_data>::Free()
     {
       if(entering == NULL)
         return;
-      //typedef std::set<State<T_data> *, lessop<State<T_data> > > s_type;
       typedef std::set<State<T_data> *> s_type;
       s_type s;
       std::queue<State<T_data> *> q = std::queue<State<T_data> *>();
